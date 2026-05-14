@@ -15,6 +15,7 @@ function createQueue() {
     resume:   () => { paused = false },
 
     add(job) {
+      if (!job?.id) throw new TypeError('add: job must have a non-empty id')
       jobs.push({ ...job, status: 'queued', progress: 0, error: null })
     },
 
@@ -28,7 +29,8 @@ function createQueue() {
     },
 
     updateStatus(id, status, extra = {}) {
-      jobs = jobs.map(j => j.id === id ? { ...j, status, ...extra } : j)
+      // Note: `status` argument takes precedence over any `status` key in `extra`
+      jobs = jobs.map(j => j.id === id ? { ...j, ...extra, status } : j)
     },
 
     nextPending() {
@@ -40,7 +42,11 @@ function createQueue() {
     },
 
     serialize()       { return JSON.stringify(jobs) },
-    deserialize(json) { jobs = JSON.parse(json) },
+    deserialize(json) {
+      const parsed = JSON.parse(json)
+      if (!Array.isArray(parsed)) throw new TypeError('Queue data must be an array')
+      jobs = parsed
+    },
   }
 }
 

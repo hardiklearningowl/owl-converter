@@ -82,4 +82,20 @@ describe('queue manager', () => {
     q2.deserialize(json)
     expect(q2.getJobs().map(j => j.id)).toEqual(['a', 'b'])
   })
+
+  it('throws when adding a job with no id', () => {
+    expect(() => q.add({ filePath: 'x.swf' })).toThrow('add: job must have a non-empty id')
+  })
+
+  it('throws when deserializing non-array data', () => {
+    expect(() => q.deserialize('null')).toThrow('Queue data must be an array')
+    expect(() => q.deserialize('{}')).toThrow('Queue data must be an array')
+  })
+
+  it('reorder silently drops unknown ids', () => {
+    q.add(makeJob('a'))
+    q.add(makeJob('b'))
+    q.reorder(['b', 'UNKNOWN', 'a'])
+    expect(q.getJobs().map(j => j.id)).toEqual(['b', 'a'])
+  })
 })

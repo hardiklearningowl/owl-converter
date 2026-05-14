@@ -1,12 +1,12 @@
 const { app, BrowserWindow } = require('electron')
 const path = require('path')
+const { registerIpc } = require('./ipc')
+const { setupUpdater } = require('./updater')
 
-// isDev is set after app is ready, but for window creation we need it early.
-// app.isPackaged is available immediately and is the reliable way.
-const isDev = !app.isPackaged
+let mainWindow
 
 function createWindow() {
-  const win = new BrowserWindow({
+  mainWindow = new BrowserWindow({
     width: 900,
     height: 620,
     minWidth: 800,
@@ -20,12 +20,17 @@ function createWindow() {
     },
   })
 
-  if (isDev) {
-    win.loadURL('http://localhost:5173')
+  registerIpc(mainWindow)
+  setupUpdater(mainWindow)
+
+  if (!app.isPackaged) {
+    mainWindow.loadURL('http://localhost:5173')
   } else {
-    win.loadFile(path.join(__dirname, '../../dist/renderer/index.html'))
+    mainWindow.loadFile(path.join(__dirname, '../../dist/renderer/index.html'))
   }
 }
 
 app.whenReady().then(createWindow)
-app.on('window-all-closed', () => app.quit())
+app.on('window-all-closed', () => {
+  if (process.platform !== 'darwin') app.quit()
+})

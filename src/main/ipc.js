@@ -74,17 +74,43 @@ function registerIpc(mainWindow) {
 
   // ── Queue ─────────────────────────────────────────
   ipcMain.handle('queue:get',       ()       => queue.getJobs())
-  ipcMain.handle('queue:add',       (_, jobs) => { jobs.forEach(j => queue.add(j)); return queue.getJobs() })
-  ipcMain.handle('queue:remove',    (_, id)  => { queue.remove(id); return queue.getJobs() })
-  ipcMain.handle('queue:reorder',   (_, ids) => { queue.reorder(ids); return queue.getJobs() })
-  ipcMain.handle('queue:clearDone', ()       => { queue.clearDone(); return queue.getJobs() })
+  ipcMain.handle('queue:add', (_, jobs) => {
+    jobs.forEach(j => queue.add(j))
+    const updated = queue.getJobs()
+    mainWindow.webContents.send('queue:updated', updated)
+    return updated
+  })
+
+  ipcMain.handle('queue:remove', (_, id) => {
+    queue.remove(id)
+    const updated = queue.getJobs()
+    mainWindow.webContents.send('queue:updated', updated)
+    return updated
+  })
+
+  ipcMain.handle('queue:reorder', (_, ids) => {
+    queue.reorder(ids)
+    const updated = queue.getJobs()
+    mainWindow.webContents.send('queue:updated', updated)
+    return updated
+  })
+
+  ipcMain.handle('queue:clearDone', () => {
+    queue.clearDone()
+    const updated = queue.getJobs()
+    mainWindow.webContents.send('queue:updated', updated)
+    return updated
+  })
   ipcMain.handle('queue:pause',     ()       => { queue.pause() })
   ipcMain.handle('queue:resume',    ()       => { queue.resume(); processNext() })
 
   // ── Conversion ────────────────────────────────────
   ipcMain.handle('convert:start', async (_, settings) => {
     isRunning = true
-    processNext(settings)
+    processNext(settings).catch(err => {
+      console.error('[ipc] processNext error:', err)
+      isRunning = false
+    })
   })
 
   ipcMain.handle('convert:startMerge', async (_, { jobs, outputFolder, outputName, settings }) => {

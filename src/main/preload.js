@@ -1,9 +1,6 @@
 const { contextBridge, ipcRenderer } = require('electron')
 
-const ALLOWED_SEND = [
-  'update:download',
-  'update:install',
-]
+const ALLOWED_SEND = []
 
 const ALLOWED_INVOKE = [
   'settings:get',
@@ -29,7 +26,9 @@ const ALLOWED_INVOKE = [
 
 const ALLOWED_ON = [
   'queue:updated',
-  'convert:progress',
+  'convert:mergeProgress',
+  'convert:mergeDone',
+  'convert:mergeError',
   'update:available',
   'update:download-progress',
   'update:downloaded',

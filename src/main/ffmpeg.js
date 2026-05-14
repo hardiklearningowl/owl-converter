@@ -61,10 +61,26 @@ function buildEncodeArgs({ input, output, resolution, quality, fps, gpuAccelerat
   if (watermark?.enabled && watermark.imagePath) {
     const sizeRatio = SIZE_MAP[watermark.size ?? 'medium']
     const overlayExpr = POSITION_MAP[watermark.position ?? 'br']
-    // Insert watermark input after the main input
+    const opacity = watermark.opacity ?? 0.7
+
+    // Insert watermark input after main input (index 3 = after '-y', '-i', '<input>')
     args.splice(3, 0, '-i', watermark.imagePath)
-    filters.push(`scale=iw*${sizeRatio}:-1[wm]`)
-    filters.push(`[wm]${overlayExpr}`)
+
+    // Build filter_complex with proper stream labels
+    const mainScale = scaleFilter ? `[0:v]${scaleFilter}[scaled];` : ''
+    const mainRef   = scaleFilter ? '[scaled]' : '[0:v]'
+
+    const filterComplex = [
+      mainScale,
+      `[1:v]scale=iw*${sizeRatio}:-1,`,
+      `format=rgba,colorchannelmixer=aa=${opacity}[wm];`,
+      `${mainRef}[wm]${overlayExpr},format=yuv420p[out]`,
+    ].join('')
+
+    args.push('-filter_complex', filterComplex)
+    args.push('-map', '[out]', '-map', '0:a?')
+    args.push('-movflags', '+faststart', output)
+    return args
   }
 
   if (filters.length > 0) {

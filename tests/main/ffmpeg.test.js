@@ -48,8 +48,35 @@ describe('buildEncodeArgs', () => {
       ...base,
       watermark: { enabled: true, imagePath: 'logo.png', position: 'br', opacity: 0.7 }
     })
-    const vfIdx = args.indexOf('-vf')
-    expect(args[vfIdx + 1]).toContain('overlay')
+    const fcIdx = args.indexOf('-filter_complex')
+    expect(fcIdx).toBeGreaterThan(-1)
+    expect(args[fcIdx + 1]).toContain('overlay')
+    expect(args[fcIdx + 1]).toContain('[0:v]')
+    expect(args[fcIdx + 1]).toContain('[1:v]')
+  })
+
+  it('applies watermark opacity', () => {
+    const args = buildEncodeArgs({
+      ...base,
+      watermark: { enabled: true, imagePath: 'logo.png', position: 'br', opacity: 0.5 }
+    })
+    const fcIdx = args.indexOf('-filter_complex')
+    expect(args[fcIdx + 1]).toContain('aa=0.5')
+  })
+
+  it('applies CRF 23 for quality medium', () => {
+    const args = buildEncodeArgs({ ...base, quality: 'medium' })
+    expect(args[args.indexOf('-crf') + 1]).toBe('23')
+  })
+
+  it('applies CRF 12 for quality lossless', () => {
+    const args = buildEncodeArgs({ ...base, quality: 'lossless' })
+    expect(args[args.indexOf('-crf') + 1]).toBe('12')
+  })
+
+  it('uses h264_nvenc when gpuAcceleration is true', () => {
+    const args = buildEncodeArgs({ ...base, gpuAcceleration: true })
+    expect(args).toContain('h264_nvenc')
   })
 
   it('applies fps override', () => {
@@ -70,5 +97,11 @@ describe('buildMergeArgs', () => {
     expect(args).toContain('-f')
     expect(args[args.indexOf('-f') + 1]).toBe('concat')
     expect(args[args.length - 1]).toBe('merged.mp4')
+  })
+
+  it('includes -safe 0 flag', () => {
+    const args = buildMergeArgs({ listFile: 'list.txt', output: 'out.mp4' })
+    expect(args).toContain('-safe')
+    expect(args[args.indexOf('-safe') + 1]).toBe('0')
   })
 })

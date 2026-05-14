@@ -24,16 +24,21 @@ export function createStore() {
 
   return {
     getSettings() {
-      return settingsStore.get('settings')
+      return { ...settingsStore.get('settings') }
     },
     saveSettings(partial) {
       const current = settingsStore.get('settings')
-      settingsStore.set('settings', { ...current, ...partial })
+      const merged = { ...current, ...partial }
+      if (partial.watermark && current.watermark) {
+        merged.watermark = { ...current.watermark, ...partial.watermark }
+      }
+      settingsStore.set('settings', merged)
     },
     getHistory() {
       return historyStore.get('records')
     },
     addHistory(record) {
+      if (!record?.id) throw new Error('addHistory: record must have a non-empty id')
       const records = historyStore.get('records')
       const updated = [record, ...records].slice(0, 100)
       historyStore.set('records', updated)

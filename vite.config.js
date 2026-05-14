@@ -16,6 +16,7 @@ export default defineConfig({
   server: { port: 5173 },
   test: {
     environment: 'jsdom',
+    environmentMatchGlobs: [['tests/main/**', 'node']],
     setupFiles: [path.resolve(__dirname, 'tests/setup.js')],
     globals: true,
     include: ['tests/**/*.test.js', 'src/**/*.test.js'],

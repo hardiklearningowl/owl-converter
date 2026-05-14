@@ -1,11 +1,10 @@
-// @vitest-environment node
 import { describe, it, expect, beforeEach, vi } from 'vitest'
 
 // Mock electron-store
 vi.mock('electron-store', () => {
   return {
     default: class {
-      constructor({ defaults }) { this._data = { ...defaults } }
+      constructor({ defaults }) { this._data = JSON.parse(JSON.stringify(defaults)) }
       get(key) { return this._data[key] }
       set(key, val) { this._data[key] = val }
     }
@@ -33,6 +32,15 @@ describe('store — settings', () => {
     const s = store.getSettings()
     expect(s.theme).toBe('dark')
     expect(s.resolution).toBe('720p')
+  })
+
+  it('deep-merges watermark sub-object without losing other watermark keys', () => {
+    store.saveSettings({ watermark: { enabled: false } })
+    const s = store.getSettings()
+    expect(s.watermark.enabled).toBe(false)
+    expect(s.watermark.position).toBe('br')     // default preserved
+    expect(s.watermark.opacity).toBe(0.7)        // default preserved
+    expect(s.watermark.imagePath).toBe('default') // default preserved
   })
 })
 
@@ -73,5 +81,9 @@ describe('store — history', () => {
     store.addHistory({ id: '1', filename: 'a.swf', date: '', inputSize: 0, outputSize: 0, duration: 0 })
     store.clearHistory()
     expect(store.getHistory()).toHaveLength(0)
+  })
+
+  it('throws when adding a record with no id', () => {
+    expect(() => store.addHistory({ filename: 'test.swf' })).toThrow('addHistory: record must have a non-empty id')
   })
 })

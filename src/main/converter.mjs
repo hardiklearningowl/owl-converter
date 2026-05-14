@@ -14,6 +14,7 @@ function spawnProcess(bin, args) {
     let stderr = ''
     proc.stderr.on('data', d => { stderr += d.toString() })
     proc.stdout.on('data', () => {})
+    proc.on('error', err => reject(new Error(`Process failed to start: ${err.message}`)))
     proc.on('close', code => {
       if (code === 0) resolve()
       else reject(new Error(`Process failed (exit ${code}): ${stderr.slice(-200)}`))
@@ -28,8 +29,7 @@ function spawnProcess(bin, args) {
  * @returns {Promise<{ success: true, outPath: string, outputSize: number }>}
  */
 async function convertJob(job, { swivelPath, ffmpegPath, onProgress }) {
-  const tmpDir  = path.join(os.tmpdir(), `owl-${job.id}`)
-  fs.mkdirSync(tmpDir, { recursive: true })
+  const tmpDir  = fs.mkdtempSync(path.join(os.tmpdir(), `owl-${job.id}-`))
   const rawMp4  = path.join(tmpDir, 'raw.mp4')
   const outName = path.basename(job.filePath, '.swf') + '.mp4'
   const outPath = path.join(job.outputFolder, outName)
@@ -62,6 +62,10 @@ async function convertJob(job, { swivelPath, ffmpegPath, onProgress }) {
     })
     await spawnProcess(ffmpegPath, encodeArgs)
 
+    if (!fs.existsSync(outPath) || fs.statSync(outPath).size === 0) {
+      throw new Error('FFmpeg produced empty output')
+    }
+
     onProgress?.({ id: job.id, stage: 'done', progress: 100 })
 
     const outputSize = fs.statSync(outPath).size
@@ -79,8 +83,7 @@ async function convertJob(job, { swivelPath, ffmpegPath, onProgress }) {
  * @returns {Promise<{ success: true, outPath: string }>}
  */
 async function mergeJobs(jobs, { ffmpegPath, outputFolder, outputName, onProgress }) {
-  const tmpDir   = path.join(os.tmpdir(), `owl-merge-${Date.now()}`)
-  fs.mkdirSync(tmpDir, { recursive: true })
+  const tmpDir   = fs.mkdtempSync(path.join(os.tmpdir(), 'owl-merge-'))
   const listFile = path.join(tmpDir, 'list.txt')
   const outPath  = path.join(outputFolder, outputName)
 

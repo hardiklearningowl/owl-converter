@@ -17,11 +17,12 @@ vi.mock('fs', () => ({
     writeFileSync: vi.fn(),
     unlinkSync:    vi.fn(),
     mkdirSync:     vi.fn(() => undefined),
+    mkdtempSync:   vi.fn((prefix) => prefix + 'tmp'),
     rmSync:        vi.fn(),
   }
 }))
 
-const { convertJob } = await import('../../src/main/converter.mjs')
+const { convertJob, mergeJobs } = await import('../../src/main/converter.mjs')
 
 const baseJob = {
   id: '1',
@@ -75,5 +76,32 @@ describe('convertJob', () => {
     await expect(
       convertJob(baseJob, { ...baseOpts })
     ).rejects.toThrow('empty output')
+  })
+})
+
+describe('mergeJobs', () => {
+  beforeEach(() => { vi.clearAllMocks() })
+
+  it('resolves with success=true on happy path', async () => {
+    const jobs = [
+      { filePath: 'C:/a.mp4' },
+      { filePath: 'C:/b.mp4' },
+    ]
+    const result = await mergeJobs(jobs, {
+      ffmpegPath: 'ffmpeg.exe',
+      outputFolder: 'C:/out',
+      outputName: 'merged.mp4',
+      onProgress: vi.fn(),
+    })
+    expect(result).toMatchObject({ success: true })
+    expect(result.outPath).toContain('merged.mp4')
+  })
+
+  it('calls onProgress at merging stage', async () => {
+    const onProgress = vi.fn()
+    const jobs = [{ filePath: 'C:/a.mp4' }]
+    await mergeJobs(jobs, { ffmpegPath: 'ffmpeg.exe', outputFolder: 'C:/out', outputName: 'out.mp4', onProgress })
+    const stages = onProgress.mock.calls.map(c => c[0].stage)
+    expect(stages).toContain('merging')
   })
 })

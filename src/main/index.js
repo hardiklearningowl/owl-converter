@@ -1,7 +1,9 @@
 const { app, BrowserWindow } = require('electron')
 const path = require('path')
 
-const isDev = process.env.NODE_ENV === 'development'
+// isDev is set after app is ready, but for window creation we need it early.
+// app.isPackaged is available immediately and is the reliable way.
+const isDev = !app.isPackaged
 
 function createWindow() {
   const win = new BrowserWindow({
@@ -14,6 +16,7 @@ function createWindow() {
       preload: path.join(__dirname, 'preload.js'),
       contextIsolation: true,
       nodeIntegration: false,
+      sandbox: true,
     },
   })
 

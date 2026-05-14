@@ -1,3 +1,4 @@
+// @vitest-environment node
 import { describe, it, expect, beforeEach, vi } from 'vitest'
 
 // Mock electron-store
@@ -11,7 +12,7 @@ vi.mock('electron-store', () => {
   }
 })
 
-const { createStore } = await import('../../src/main/store.js')
+const { createStore } = await import('../../src/main/store.mjs')
 
 describe('store — settings', () => {
   let store

@@ -17,14 +17,14 @@ export default function DropZone() {
 
   async function handleClick() {
     const paths = await invoke('dialog:openFiles')
-    if (paths.length > 0) addFiles(paths)
+    if (paths?.length > 0) addFiles(paths)
   }
 
   return (
     <div
       onClick={handleClick}
       onDragOver={e => { e.preventDefault(); setDragging(true) }}
-      onDragLeave={() => setDragging(false)}
+      onDragLeave={e => { if (!e.currentTarget.contains(e.relatedTarget)) setDragging(false) }}
       onDrop={handleDrop}
       className={`mx-4 mb-2 border-[1.5px] border-dashed rounded-lg py-3 text-center transition-all cursor-pointer ${
         dragging

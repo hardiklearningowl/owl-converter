@@ -1,5 +1,4 @@
 import React from 'react'
-import path from 'path-browserify'
 
 const STATUS_COLORS = {
   done:       'border-green-500',

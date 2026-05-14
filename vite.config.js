@@ -19,7 +19,7 @@ export default defineConfig({
     environmentMatchGlobs: [['tests/main/**', 'node']],
     setupFiles: [path.resolve(__dirname, 'tests/setup.js')],
     globals: true,
-    include: ['tests/**/*.test.js', 'src/**/*.test.js'],
+    include: ['tests/**/*.test.{js,jsx}', 'src/**/*.test.{js,jsx}'],
     root: path.resolve(__dirname),
   },
 })

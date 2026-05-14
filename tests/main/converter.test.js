@@ -21,7 +21,7 @@ vi.mock('fs', () => ({
   }
 }))
 
-const { convertJob } = await import('../../src/main/converter.js')
+const { convertJob } = await import('../../src/main/converter.mjs')
 
 const baseJob = {
   id: '1',
@@ -51,7 +51,7 @@ describe('convertJob', () => {
 
   it('calls onProgress at least twice (rendering + encoding stages)', async () => {
     await convertJob(baseJob, baseOpts)
-    expect(baseOpts.onProgress).toHaveBeenCalledTimes(expect.any(Number))
+    expect(baseOpts.onProgress.mock.calls.length).toBeGreaterThanOrEqual(2)
     const stages = baseOpts.onProgress.mock.calls.map(c => c[0].stage)
     expect(stages).toContain('rendering')
     expect(stages).toContain('encoding')

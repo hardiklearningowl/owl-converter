@@ -12,8 +12,11 @@ module.exports = {
     'package.json',
   ],
   extraResources: [
-    { from: 'binaries/', to: 'binaries/', filter: ['*.exe'] },
-    { from: 'assets/',   to: 'assets/' },
+    // Swivel AIR captive-runtime bundle (directory with exe + runtime DLLs)
+    { from: 'binaries/swivel-bundle/', to: 'binaries/swivel-bundle/' },
+    // FFmpeg single executable
+    { from: 'binaries/ffmpeg.exe',    to: 'binaries/ffmpeg.exe' },
+    { from: 'assets/',                to: 'assets/' },
   ],
   win: {
     target: [{ target: 'nsis', arch: ['x64'] }],

@@ -18,16 +18,18 @@ async function getConverter() {
   return converterModule
 }
 
-// Resolve bundled binary paths
+// Resolve bundled binary paths.
+// Swivel ships as an Adobe AIR captive-runtime bundle (a directory).
+// The entry point exe lives inside:  binaries/swivel-bundle/swivel-cli.exe
 function getBinaries() {
   if (!app.isPackaged) {
     return {
-      swivel: 'binaries/swivel-cli.exe',
-      ffmpeg: 'binaries/ffmpeg.exe',
+      swivel: path.join('binaries', 'swivel-bundle', 'swivel-cli.exe'),
+      ffmpeg: path.join('binaries', 'ffmpeg.exe'),
     }
   }
   return {
-    swivel: path.join(process.resourcesPath, 'binaries', 'swivel-cli.exe'),
+    swivel: path.join(process.resourcesPath, 'binaries', 'swivel-bundle', 'swivel-cli.exe'),
     ffmpeg: path.join(process.resourcesPath, 'binaries', 'ffmpeg.exe'),
   }
 }

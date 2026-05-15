@@ -2,6 +2,7 @@
 
 const { ipcMain, dialog, shell, app } = require('electron')
 const path = require('path')
+const fs   = require('fs')
 const { createQueue } = require('./queue')
 
 // Dynamic imports for ESM modules
@@ -31,8 +32,29 @@ function getBinaries() {
   }
 }
 
+const QUEUE_PATH = path.join(app.getPath('userData'), 'queue.json')
+
+function persistQueue(queue) {
+  try {
+    fs.writeFileSync(QUEUE_PATH, queue.serialize(), 'utf-8')
+  } catch (e) {
+    console.error('Failed to persist queue:', e)
+  }
+}
+
+function loadQueue(queue) {
+  try {
+    if (fs.existsSync(QUEUE_PATH)) {
+      queue.deserialize(fs.readFileSync(QUEUE_PATH, 'utf-8'))
+    }
+  } catch (e) {
+    console.error('Failed to restore queue:', e)
+  }
+}
+
 function registerIpc(mainWindow) {
   const queue = createQueue()
+  loadQueue(queue)
   let store = null
   let isRunning = false
 
@@ -78,6 +100,7 @@ function registerIpc(mainWindow) {
     jobs.forEach(j => queue.add(j))
     const updated = queue.getJobs()
     mainWindow.webContents.send('queue:updated', updated)
+    persistQueue(queue)
     return updated
   })
 
@@ -85,6 +108,7 @@ function registerIpc(mainWindow) {
     queue.remove(id)
     const updated = queue.getJobs()
     mainWindow.webContents.send('queue:updated', updated)
+    persistQueue(queue)
     return updated
   })
 
@@ -92,6 +116,7 @@ function registerIpc(mainWindow) {
     queue.reorder(ids)
     const updated = queue.getJobs()
     mainWindow.webContents.send('queue:updated', updated)
+    persistQueue(queue)
     return updated
   })
 
@@ -99,13 +124,14 @@ function registerIpc(mainWindow) {
     queue.clearDone()
     const updated = queue.getJobs()
     mainWindow.webContents.send('queue:updated', updated)
+    persistQueue(queue)
     return updated
   })
   ipcMain.handle('queue:pause',     ()       => { queue.pause() })
   ipcMain.handle('queue:resume',    ()       => { queue.resume(); processNext() })
 
   // ── Conversion ────────────────────────────────────
-  ipcMain.handle('convert:start', async (_, settings) => {
+  ipcMain.handle('convert:start', async (_, { settings } = {}) => {
     isRunning = true
     processNext(settings).catch(err => {
       console.error('[ipc] processNext error:', err)
@@ -141,6 +167,7 @@ function registerIpc(mainWindow) {
     queue.updateStatus(job.id, 'converting', { progress: 0 })
     mainWindow.webContents.send('queue:updated', queue.getJobs())
 
+    const jobStartTime = Date.now()
     try {
       const { convertJob } = await getConverter()
       const BINARIES = getBinaries()
@@ -160,11 +187,15 @@ function registerIpc(mainWindow) {
         id:         job.id,
         filename:   path.basename(job.filePath),
         date:       new Date().toISOString(),
-        inputSize:  0,
+        filePath:   job.filePath,
+        inputSize:  fs.statSync(job.filePath).size,
         outputSize: result.outputSize,
-        duration:   0,
+        duration:   Date.now() - jobStartTime,
         outPath:    result.outPath,
       })
+      if (currentSettings?.openFolderWhenDone) {
+        shell.openPath(currentSettings.outputFolder)
+      }
     } catch (err) {
       queue.updateStatus(job.id, 'error', { error: err.message })
     }

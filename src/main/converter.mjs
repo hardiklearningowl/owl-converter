@@ -34,6 +34,19 @@ async function convertJob(job, { swivelPath, ffmpegPath, onProgress }) {
   const outName = path.basename(job.filePath, '.swf') + '.mp4'
   const outPath = path.join(job.outputFolder, outName)
 
+  // Resolve 'default' watermark sentinel to actual bundled asset path
+  const resolvedSettings = { ...job }
+  if (resolvedSettings.watermark?.imagePath === 'default') {
+    const { app } = await import('electron')
+    const resourcesPath = app.isPackaged
+      ? process.resourcesPath
+      : path.join(path.dirname(new URL(import.meta.url).pathname).replace(/^\/([A-Z]:)/, '$1'), '..', '..', 'assets')
+    resolvedSettings.watermark = {
+      ...resolvedSettings.watermark,
+      imagePath: path.join(resourcesPath, 'watermarks', 'default.png'),
+    }
+  }
+
   try {
     onProgress?.({ id: job.id, stage: 'rendering', progress: 5 })
 
@@ -54,11 +67,11 @@ async function convertJob(job, { swivelPath, ffmpegPath, onProgress }) {
     const encodeArgs = buildEncodeArgs({
       input:           rawMp4,
       output:          outPath,
-      resolution:      job.resolution,
-      quality:         job.quality,
-      fps:             job.fps,
-      gpuAcceleration: job.gpuAcceleration,
-      watermark:       job.watermark,
+      resolution:      resolvedSettings.resolution,
+      quality:         resolvedSettings.quality,
+      fps:             resolvedSettings.fps,
+      gpuAcceleration: resolvedSettings.gpuAcceleration,
+      watermark:       resolvedSettings.watermark,
     })
     await spawnProcess(ffmpegPath, encodeArgs)
 

@@ -15,7 +15,7 @@ const DOWNLOADS = [
   {
     name: 'swivel-cli.exe',
     // Update this URL after first Swivel GitHub Release is published
-    url: 'https://github.com/learningowl/swivel/releases/latest/download/swivel-cli-windows.zip',
+    url: 'https://github.com/hardiklearningowl/swivel/releases/latest/download/swivel-cli-windows.zip',
     isZip: true,
     extractFile: 'swivel-cli.exe',
   },

@@ -26,7 +26,7 @@ module.exports = {
   },
   publish: {
     provider: 'github',
-    owner:    'learningowl',
+    owner:    'hardiklearningowl',
     repo:     'owl-converter',
   },
 }

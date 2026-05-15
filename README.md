@@ -79,9 +79,15 @@ OwlConverter is a **free, open-source Windows desktop app** that converts Adobe 
 
 ## Installation
 
-> **⚠️ v1.0.0 installer coming soon** — the first Windows release is being prepared. Star the repo to get notified when it drops.
+### Download (Windows)
 
-### Build from Source (Available Now)
+**[⬇ OwlConverter-Setup-1.0.0.exe](https://github.com/hardiklearningowl/owl-converter/releases/latest/download/OwlConverter-Setup-1.0.0.exe)**
+
+One-click installer — no restart required. Adobe AIR and FFmpeg are bundled; nothing else to install.
+
+➡ **[All releases →](https://github.com/hardiklearningowl/owl-converter/releases)**
+
+### Build from Source
 
 **Prerequisites:** Node.js 20+, Git
 
@@ -97,9 +103,7 @@ npm install
 npm run dev
 ```
 
-> **Note:** The bundled Swivel CLI binary (required for SWF rendering) will be published alongside the v1.0.0 release. Until then, `npm run dev` launches the UI — conversion requires the binary to be present in `binaries/`.
-
-To build a distributable installer once binaries are available:
+To build a distributable installer:
 ```bash
 npm run fetch-binaries   # Download Swivel CLI + FFmpeg
 npm run build            # Build renderer

@@ -2,7 +2,7 @@ import React from 'react'
 import { useQueueStore } from '../stores/queueStore'
 
 export default function StatusBar() {
-  const jobs = useQueueStore(s => s.jobs)
+  const { jobs, paused } = useQueueStore(s => ({ jobs: s.jobs, paused: s.paused }))
 
   const active = jobs.find(j => j.status === 'converting')
   const done   = jobs.filter(j => j.status === 'done').length
@@ -21,7 +21,9 @@ export default function StatusBar() {
       ) : (
         <>
           <div className="w-1.5 h-1.5 rounded-full bg-slate-300 dark:bg-slate-600" />
-          <span className="text-slate-400">{total === 0 ? 'Ready — add SWF files to begin' : 'Queue ready'}</span>
+          <span className="text-slate-400">
+            {total === 0 ? 'Ready — add SWF files to begin' : paused ? 'Queue paused' : 'Queue ready'}
+          </span>
         </>
       )}
 

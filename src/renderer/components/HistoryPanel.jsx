@@ -4,20 +4,30 @@ import { useQueueStore } from '../stores/queueStore'
 
 export default function HistoryPanel({ onClose }) {
   const [records, setRecords] = useState([])
+  const [error, setError] = useState(null)
   const addFiles = useQueueStore(s => s.addFiles)
 
   useEffect(() => {
-    invoke('history:get').then(setRecords)
+    invoke('history:get').then(setRecords).catch(() => setError('Could not load history'))
   }, [])
 
   async function handleRemove(id) {
-    await invoke('history:remove', id)
-    setRecords(r => r.filter(rec => rec.id !== id))
+    try {
+      await invoke('history:remove', id)
+      setRecords(r => r.filter(rec => rec.id !== id))
+    } catch {
+      // ignore — record stays in list if IPC fails
+    }
   }
 
   async function handleClear() {
-    await invoke('history:clear')
-    setRecords([])
+    if (!window.confirm('Remove all conversion history? This cannot be undone.')) return
+    try {
+      await invoke('history:clear')
+      setRecords([])
+    } catch {
+      // ignore
+    }
   }
 
   return (
@@ -33,7 +43,7 @@ export default function HistoryPanel({ onClose }) {
               className="text-[11px] text-slate-400 hover:text-brand-orange cursor-pointer transition-colors">
               Clear all
             </button>
-            <button onClick={onClose}
+            <button aria-label="Close history" onClick={onClose}
               className="text-slate-400 hover:text-slate-700 dark:hover:text-slate-200 cursor-pointer text-lg leading-none">
               ✕
             </button>
@@ -42,8 +52,11 @@ export default function HistoryPanel({ onClose }) {
 
         {/* List */}
         <div className="flex-1 overflow-y-auto p-4 space-y-2">
-          {records.length === 0 && (
+          {records.length === 0 && !error && (
             <p className="text-xs text-slate-400 text-center mt-8">No conversions yet</p>
+          )}
+          {error && (
+            <p className="text-xs text-brand-orange text-center mt-8">{error}</p>
           )}
           {records.map(rec => (
             <div key={rec.id}
@@ -60,7 +73,7 @@ export default function HistoryPanel({ onClose }) {
                   className="text-[10px] text-brand-blue hover:underline cursor-pointer">Open</button>
                 <button onClick={() => { addFiles([rec.filePath]); onClose() }}
                   className="text-[10px] text-slate-400 hover:text-slate-700 dark:hover:text-slate-200 cursor-pointer">Re-add</button>
-                <button onClick={() => handleRemove(rec.id)}
+                <button aria-label={`Remove ${rec.filename}`} onClick={() => handleRemove(rec.id)}
                   className="text-[10px] text-slate-300 dark:text-slate-600 hover:text-brand-orange cursor-pointer">✕</button>
               </div>
             </div>
@@ -72,7 +85,7 @@ export default function HistoryPanel({ onClose }) {
 }
 
 function formatBytes(bytes) {
-  if (!bytes) return '—'
+  if (bytes == null) return '—'
   if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`
   return `${(bytes / 1024 / 1024).toFixed(1)} MB`
 }

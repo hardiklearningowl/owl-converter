@@ -28,6 +28,14 @@
 
 ---
 
+## Screenshot
+
+<div align="center">
+<img src="docs/screenshot.png" alt="OwlConverter UI" width="100%" />
+</div>
+
+---
+
 ## What is OwlConverter?
 
 OwlConverter is a **free, open-source Windows desktop app** that converts Adobe Flash (SWF) animation files to MP4. Built by [Learning Owl](https://learningowl.in) for eLearning teams who need a fast, no-hassle way to modernise their SWF content — no Adobe products required, no cloud upload, no subscription.

@@ -2,7 +2,8 @@ import React from 'react'
 import { useQueueStore } from '../stores/queueStore'
 
 export default function StatusBar() {
-  const { jobs, paused } = useQueueStore(s => ({ jobs: s.jobs, paused: s.paused }))
+  const jobs   = useQueueStore(s => s.jobs)
+  const paused = useQueueStore(s => s.paused)
 
   const active = jobs.find(j => j.status === 'converting')
   const done   = jobs.filter(j => j.status === 'done').length

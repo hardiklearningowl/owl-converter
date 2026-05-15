@@ -144,8 +144,10 @@ function registerIpc(mainWindow) {
     try {
       const { mergeJobs } = await getConverter()
       const result = await mergeJobs(jobs, {
-        ffmpegPath: getBinaries().ffmpeg,
+        swivelPath: getBinaries().swivel,
+        ffmpegPath:  getBinaries().ffmpeg,
         outputFolder, outputName,
+        settings,
         onProgress: p => mainWindow.webContents.send('convert:mergeProgress', p),
       })
       mainWindow.webContents.send('convert:mergeDone', result)

@@ -39,11 +39,11 @@ export default function SettingsPanel() {
         settings,
       })
     } else {
-      await invoke('convert:start', settings)
+      await invoke('convert:start', { jobs: pending, settings })
     }
   }
 
-  const pending = jobs.filter(j => j.status === 'queued').length
+  const pendingCount = jobs.filter(j => j.status === 'queued').length
 
   return (
     <div className="w-64 flex-shrink-0 flex flex-col bg-slate-50/50 dark:bg-white/[0.015] border-l border-slate-100 dark:border-slate-800">
@@ -110,10 +110,10 @@ export default function SettingsPanel() {
 
       {/* Convert button */}
       <div className="px-4 py-3 border-t border-slate-100 dark:border-slate-800">
-        <button onClick={handleConvert} disabled={pending === 0}
+        <button onClick={handleConvert} disabled={pendingCount === 0}
           className="w-full h-11 flex items-center justify-center gap-2 bg-gradient-to-br from-brand-orange to-[#c73c24] text-white font-bold text-sm rounded-lg shadow-lg shadow-brand-orange/30 hover:shadow-brand-orange/50 hover:-translate-y-px transition-all cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed disabled:transform-none">
           <PlayIcon />
-          Convert {pending > 0 ? `(${pending} file${pending !== 1 ? 's' : ''})` : 'All'}
+          Convert {pendingCount > 0 ? `(${pendingCount} file${pendingCount !== 1 ? 's' : ''})` : 'All'}
         </button>
       </div>
     </div>
@@ -147,8 +147,8 @@ function Select({ value, onChange, options }) {
 
 function Toggle({ label, desc, value, onChange }) {
   return (
-    <div onClick={() => onChange(!value)}
-      className="flex items-center justify-between p-2.5 bg-white dark:bg-[#0d2137] border border-slate-200 dark:border-slate-700 rounded-lg mb-1.5 cursor-pointer hover:border-brand-blue/30 transition-colors">
+    <button type="button" onClick={() => onChange(!value)}
+      className="w-full flex items-center justify-between p-2.5 bg-white dark:bg-[#0d2137] border border-slate-200 dark:border-slate-700 rounded-lg mb-1.5 cursor-pointer hover:border-brand-blue/30 transition-colors">
       <div>
         <div className="text-xs text-slate-900 dark:text-slate-100 font-medium">{label}</div>
         <div className="text-[10px] text-slate-400">{desc}</div>
@@ -156,7 +156,7 @@ function Toggle({ label, desc, value, onChange }) {
       <div className={`w-8 h-[18px] rounded-full flex items-center px-0.5 transition-colors ${value ? 'bg-brand-blue justify-end' : 'bg-slate-200 dark:bg-slate-700 justify-start'}`}>
         <div className="w-3.5 h-3.5 bg-white rounded-full shadow-sm" />
       </div>
-    </div>
+    </button>
   )
 }
 

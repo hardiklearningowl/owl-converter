@@ -1,5 +1,6 @@
 import React from 'react'
 import { invoke } from '../hooks/useIpc'
+import logoHorizontal from '../assets/logo-horizontal.png'
 
 export default function TitleBar({ updateInfo }) {
   return (
@@ -12,12 +13,13 @@ export default function TitleBar({ updateInfo }) {
         <div className="w-3 h-3 rounded-full bg-green-500" />
       </div>
 
-      {/* Logo + name — centred */}
-      <div className="flex items-center gap-2 flex-1 justify-center">
-        <OwlLogo />
+      {/* Logo + product name — centred */}
+      <div className="flex items-center gap-3 flex-1 justify-center">
+        <img src={logoHorizontal} alt="Learning Owl" className="h-7 w-auto object-contain dark:brightness-110" />
+        <div className="w-px h-5 bg-slate-200 dark:bg-slate-700" />
         <div>
           <div className="text-sm font-bold text-slate-900 dark:text-slate-100 leading-none">OwlConverter</div>
-          <div className="text-[10px] text-brand-blue leading-none mt-0.5">by Learning Owl</div>
+          <div className="text-[10px] text-brand-blue leading-none mt-0.5">SWF → MP4</div>
         </div>
       </div>
 
@@ -35,16 +37,5 @@ export default function TitleBar({ updateInfo }) {
         </div>
       )}
     </div>
-  )
-}
-
-function OwlLogo() {
-  return (
-    <svg width="28" height="28" viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
-      <circle cx="50" cy="50" r="46" fill="none" stroke="currentColor" strokeWidth="5" className="text-slate-800 dark:text-slate-200"/>
-      <ellipse cx="50" cy="60" rx="25" ry="32" fill="#29ABE2"/>
-      <path d="M30 32 Q50 18 70 32 Q65 22 50 20 Q35 22 30 32Z" fill="#E8472A"/>
-      <path d="M52 58 Q66 52 68 70 Q66 80 54 82 Q50 70 52 58Z" fill="#F7B731"/>
-    </svg>
   )
 }

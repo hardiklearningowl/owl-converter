@@ -81,11 +81,27 @@ OwlConverter is a **free, open-source Windows desktop app** that converts Adobe 
 
 ### Download (Windows)
 
-**[⬇ OwlConverter-Setup-1.0.0.exe](https://github.com/hardiklearningowl/owl-converter/releases/latest/download/OwlConverter-Setup-1.0.0.exe)**
+**[⬇ Get the latest installer from GitHub Releases](https://github.com/hardiklearningowl/owl-converter/releases/latest)**
 
 One-click installer — no restart required. Adobe AIR and FFmpeg are bundled; nothing else to install.
 
 ➡ **[All releases →](https://github.com/hardiklearningowl/owl-converter/releases)**
+
+#### "Windows protected your PC" warning
+
+The installer is not code-signed (signing certificates cost $200+/year and we keep this tool free). Windows SmartScreen will warn you the first time:
+
+> **Windows protected your PC**
+> Microsoft Defender SmartScreen prevented an unrecognized app from starting.
+
+To proceed: click **More info**, then **Run anyway**.
+
+You can verify the installer's integrity before running it. Every GitHub release publishes a `latest.yml` file with a SHA-512 checksum:
+
+```powershell
+# In PowerShell, compare the hash against latest.yml from the release page
+Get-FileHash -Algorithm SHA512 .\OwlConverter-Setup-*.exe
+```
 
 ### Build from Source
 

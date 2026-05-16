@@ -1,6 +1,6 @@
 {
   "name": "owl-converter",
-  "version": "1.0.4",
+  "version": "1.0.5",
   "description": "SWF to MP4 converter by Learning Owl",
   "main": "src/main/index.js",
   "author": "Learning Owl",

@@ -6,7 +6,9 @@ import { buildEncodeArgs, buildMergeArgs } from './ffmpeg.js'
 
 /**
  * Spawn a process and wait for it to exit.
- * Rejects with last 200 chars of stderr on non-zero exit.
+ * Rejects on non-zero exit with both the head (where errors typically appear)
+ * and tail (progress / final stats) of stderr, so the actual failure reason
+ * isn't lost in FFmpeg's progress output.
  */
 function spawnProcess(bin, args) {
   return new Promise((resolve, reject) => {
@@ -16,8 +18,13 @@ function spawnProcess(bin, args) {
     proc.stdout.on('data', () => {})
     proc.on('error', err => reject(new Error(`Process failed to start: ${err.message}`)))
     proc.on('close', code => {
-      if (code === 0) resolve()
-      else reject(new Error(`Process failed (exit ${code}): ${stderr.slice(-200)}`))
+      if (code === 0) { resolve(); return }
+      // Include first 600 chars (where ffmpeg/swivel print real errors) and
+      // last 400 chars (progress / Qavg). Errors are usually near the start.
+      const head = stderr.slice(0, 600)
+      const tail = stderr.length > 1000 ? stderr.slice(-400) : ''
+      const msg  = tail ? `${head}\n...\n${tail}` : head || '(no stderr)'
+      reject(new Error(`Process failed (exit ${code}): ${msg}`))
     })
   })
 }

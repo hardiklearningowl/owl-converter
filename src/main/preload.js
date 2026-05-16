@@ -22,6 +22,7 @@ const ALLOWED_INVOKE = [
   'shell:openPath',
   'update:download',
   'update:install',
+  'app:getVersion',
 ]
 
 const ALLOWED_ON = [

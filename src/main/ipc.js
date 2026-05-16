@@ -69,6 +69,9 @@ function registerIpc(mainWindow) {
     return store
   }
 
+  // ── App info ─────────────────────────────────────
+  ipcMain.handle('app:getVersion', () => app.getVersion())
+
   // ── Settings ─────────────────────────────────────
   ipcMain.handle('settings:get',  async ()      => { const s = await ensureStore(); return s.getSettings() })
   ipcMain.handle('settings:save', async (_, p)  => { const s = await ensureStore(); return s.saveSettings(p) })

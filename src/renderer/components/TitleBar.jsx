@@ -1,8 +1,14 @@
-import React from 'react'
+import React, { useEffect, useState } from 'react'
 import { invoke } from '../hooks/useIpc'
 import logoHorizontal from '../assets/logo-horizontal.png'
 
 export default function TitleBar({ updateInfo }) {
+  const [appVersion, setAppVersion] = useState('')
+
+  useEffect(() => {
+    invoke('app:getVersion').then(setAppVersion).catch(() => setAppVersion(''))
+  }, [])
+
   return (
     <div className="flex items-center gap-3 px-4 h-12 bg-white dark:bg-[#071220] border-b border-slate-100 dark:border-slate-800 flex-shrink-0">
 
@@ -33,7 +39,7 @@ export default function TitleBar({ updateInfo }) {
         </button>
       ) : (
         <div className="text-[10px] bg-brand-blue/10 border border-brand-blue/30 text-brand-blue px-2 py-1 rounded-full font-semibold">
-          v1.0.0
+          {appVersion ? `v${appVersion}` : ''}
         </div>
       )}
     </div>

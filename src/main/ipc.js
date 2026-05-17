@@ -59,6 +59,11 @@ function registerIpc(mainWindow) {
   loadQueue(queue)
   let store = null
   let isRunning = false
+  // Tracks whether the user has clicked Convert at least once in this session.
+  // Once true, adding more SWFs auto-resumes processing instead of waiting
+  // for another Convert click — matches user expectation that files dropped
+  // into a running queue should just keep going.
+  let conversionStarted = false
 
   // Lazy-init store (async ESM import)
   async function ensureStore() {
@@ -116,6 +121,16 @@ function registerIpc(mainWindow) {
     const updated = queue.getJobs()
     mainWindow.webContents.send('queue:updated', updated)
     persistQueue(queue)
+    // If a conversion was already kicked off in this session, auto-resume
+    // processing for the newly added files. Without this, files added after
+    // the queue drained sit forever waiting for another Convert click.
+    if (conversionStarted && !isRunning && !queue.isPaused() && queue.nextPending()) {
+      isRunning = true
+      processNext().catch(err => {
+        console.error('[ipc] processNext (auto-resume) error:', err)
+        isRunning = false
+      })
+    }
     return updated
   })
 
@@ -147,6 +162,7 @@ function registerIpc(mainWindow) {
 
   // ── Conversion ────────────────────────────────────
   ipcMain.handle('convert:start', async (_, { settings } = {}) => {
+    conversionStarted = true
     isRunning = true
     processNext(settings).catch(err => {
       console.error('[ipc] processNext error:', err)

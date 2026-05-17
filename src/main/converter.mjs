@@ -5,12 +5,42 @@ import os        from 'os'
 import { buildEncodeArgs, buildMergeArgs } from './ffmpeg.js'
 
 /**
+ * Adobe AIR can't write to stderr — swivel-cli's uncaughtErrorHandler logs
+ * fatal errors to %APPDATA%\com.newgrounds.swivel.Swivel\Local Store\swivel-cli.log
+ * instead. Read the tail of that file to surface the real cause to the user.
+ */
+function readSwivelLogTail() {
+  try {
+    const logPath = path.join(
+      process.env.APPDATA || path.join(os.homedir(), 'AppData', 'Roaming'),
+      'com.newgrounds.swivel.Swivel', 'Local Store', 'swivel-cli.log'
+    )
+    if (!fs.existsSync(logPath)) return ''
+    const text  = fs.readFileSync(logPath, 'utf8')
+    const lines = text.split(/\r?\n/).filter(Boolean)
+    // Walk back from the end to find the most recent [ERROR] line.
+    for (let i = lines.length - 1; i >= 0; i--) {
+      if (lines[i].startsWith('[ERROR]')) {
+        const errLine   = lines[i]
+        const stackLine = (lines[i + 1] && lines[i + 1].startsWith('[STACK]')) ? lines[i + 1] : ''
+        return `\n${errLine}${stackLine ? '\n' + stackLine.slice(0, 300) : ''}`
+      }
+    }
+    return ''
+  } catch (_) { return '' }
+}
+
+/**
  * Spawn a process and wait for it to exit.
  * Rejects on non-zero exit with both the head (where errors typically appear)
  * and tail (progress / final stats) of stderr, so the actual failure reason
  * isn't lost in FFmpeg's progress output.
+ *
+ * For swivel-cli specifically: stderr is always empty (AIR limitation), so we
+ * also read the tail of swivel-cli.log to surface the real Haxe error.
  */
 function spawnProcess(bin, args) {
+  const isSwivel = /swivel-cli\.exe$/i.test(bin)
   return new Promise((resolve, reject) => {
     const proc = spawn(bin, args, { stdio: ['ignore', 'pipe', 'pipe'] })
     let stderr = ''
@@ -19,11 +49,10 @@ function spawnProcess(bin, args) {
     proc.on('error', err => reject(new Error(`Process failed to start: ${err.message}`)))
     proc.on('close', code => {
       if (code === 0) { resolve(); return }
-      // Include first 600 chars (where ffmpeg/swivel print real errors) and
-      // last 400 chars (progress / Qavg). Errors are usually near the start.
       const head = stderr.slice(0, 600)
       const tail = stderr.length > 1000 ? stderr.slice(-400) : ''
-      const msg  = tail ? `${head}\n...\n${tail}` : head || '(no stderr)'
+      let   msg  = tail ? `${head}\n...\n${tail}` : head || '(no stderr)'
+      if (isSwivel) msg += readSwivelLogTail()
       reject(new Error(`Process failed (exit ${code}): ${msg}`))
     })
   })

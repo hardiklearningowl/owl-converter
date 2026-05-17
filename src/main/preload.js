@@ -23,6 +23,7 @@ const ALLOWED_INVOKE = [
   'shell:openPath',
   'update:download',
   'update:install',
+  'update:check',
   'app:getVersion',
 ]
 
@@ -34,6 +35,7 @@ const ALLOWED_ON = [
   'update:available',
   'update:download-progress',
   'update:downloaded',
+  'update:checkResult',
 ]
 
 contextBridge.exposeInMainWorld('owl', {

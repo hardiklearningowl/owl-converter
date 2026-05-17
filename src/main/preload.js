@@ -10,6 +10,7 @@ const ALLOWED_INVOKE = [
   'history:clear',
   'dialog:openFiles',
   'dialog:openFolder',
+  'dialog:saveMergedMp4',
   'queue:get',
   'queue:add',
   'queue:remove',

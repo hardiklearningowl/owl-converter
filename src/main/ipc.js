@@ -91,6 +91,16 @@ function registerIpc(mainWindow) {
     return filePaths ?? []
   })
 
+  ipcMain.handle('dialog:saveMergedMp4', async (_, { defaultPath } = {}) => {
+    const { filePath, canceled } = await dialog.showSaveDialog(mainWindow, {
+      title: 'Save merged MP4 as…',
+      defaultPath: defaultPath || 'merged_output.mp4',
+      filters: [{ name: 'MP4 video', extensions: ['mp4'] }],
+    })
+    if (canceled || !filePath) return null
+    return { folder: path.dirname(filePath), name: path.basename(filePath) }
+  })
+
   ipcMain.handle('dialog:openFolder', async () => {
     const { filePaths } = await dialog.showOpenDialog(mainWindow, {
       title: 'Select output folder',
@@ -145,7 +155,13 @@ function registerIpc(mainWindow) {
   })
 
   ipcMain.handle('convert:startMerge', async (_, { jobs, outputFolder, outputName, settings }) => {
+    // Mark all merge jobs as 'converting' so the UI shows progress / spinner.
+    const jobIds = jobs.map(j => j.id)
+    jobIds.forEach(id => queue.updateStatus(id, 'converting', { progress: 0, stage: 'rendering' }))
+    mainWindow.webContents.send('queue:updated', queue.getJobs())
     mainWindow.webContents.send('convert:mergeProgress', { stage: 'merging', progress: 0 })
+
+    const mergeStartTime = Date.now()
     try {
       const { mergeJobs } = await getConverter()
       const result = await mergeJobs(jobs, {
@@ -153,10 +169,34 @@ function registerIpc(mainWindow) {
         ffmpegPath:  getBinaries().ffmpeg,
         outputFolder, outputName,
         settings,
-        onProgress: p => mainWindow.webContents.send('convert:mergeProgress', p),
+        onProgress: p => {
+          // Reflect merge progress on every queued job so the user sees motion.
+          jobIds.forEach(id => queue.updateStatus(id, 'converting', { progress: p.progress, stage: p.stage }))
+          mainWindow.webContents.send('queue:updated', queue.getJobs())
+          mainWindow.webContents.send('convert:mergeProgress', p)
+        },
       })
+      // Mark all source jobs as done; record the merged output once in history.
+      jobIds.forEach(id => queue.updateStatus(id, 'done', { outPath: result.outPath }))
+      mainWindow.webContents.send('queue:updated', queue.getJobs())
+      try {
+        const s = await ensureStore()
+        await s.addHistory({
+          id:         jobIds[0],
+          filename:   outputName + ' (merged)',
+          date:       new Date().toISOString(),
+          filePath:   jobs.map(j => j.filePath).join(' + '),
+          inputSize:  jobs.reduce((sum, j) => { try { return sum + fs.statSync(j.filePath).size } catch (_) { return sum } }, 0),
+          outputSize: fs.existsSync(result.outPath) ? fs.statSync(result.outPath).size : 0,
+          duration:   Date.now() - mergeStartTime,
+          outPath:    result.outPath,
+        })
+      } catch (_) { /* history failure must not break merge */ }
+      if (settings?.openFolderWhenDone) shell.openPath(outputFolder)
       mainWindow.webContents.send('convert:mergeDone', result)
     } catch (e) {
+      jobIds.forEach(id => queue.updateStatus(id, 'error', { error: e.message }))
+      mainWindow.webContents.send('queue:updated', queue.getJobs())
       mainWindow.webContents.send('convert:mergeError', { error: e.message })
     }
   })

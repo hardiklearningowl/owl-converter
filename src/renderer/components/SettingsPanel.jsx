@@ -30,12 +30,16 @@ export default function SettingsPanel() {
     const pending = jobs.filter(j => j.status === 'queued')
     if (pending.length === 0) return
     if (mode === 'merge') {
-      const name = prompt('Output filename (without extension):', 'merged_output')
-      if (!name) return
+      // window.prompt() is disabled by Electron with contextIsolation/sandbox.
+      // Use a native Save dialog instead — picks both folder and filename.
+      const stamp  = new Date().toISOString().replace(/[:.]/g, '-').slice(0, 19)
+      const defaultPath = (settings.outputFolder ? settings.outputFolder + '\\' : '') + `merged_${stamp}.mp4`
+      const pick = await invoke('dialog:saveMergedMp4', { defaultPath })
+      if (!pick) return
       await invoke('convert:startMerge', {
         jobs: pending,
-        outputFolder: settings.outputFolder,
-        outputName: name + '.mp4',
+        outputFolder: pick.folder,
+        outputName:   pick.name,
         settings,
       })
     } else {

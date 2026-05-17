@@ -70,17 +70,27 @@ async function convertJob(job, { swivelPath, ffmpegPath, onProgress }) {
 
     onProgress?.({ id: job.id, stage: 'encoding', progress: 50 })
 
-    // Stage 2: raw MP4 → final MP4 via FFmpeg
-    const encodeArgs = buildEncodeArgs({
-      input:           rawMp4,
-      output:          outPath,
-      resolution:      resolvedSettings.resolution,
-      quality:         resolvedSettings.quality,
-      fps:             resolvedSettings.fps,
-      gpuAcceleration: resolvedSettings.gpuAcceleration,
-      watermark:       resolvedSettings.watermark,
-    })
-    await spawnProcess(ffmpegPath, encodeArgs)
+    // Stage 2: raw MP4 → final MP4 via FFmpeg.
+    // Try GPU first if requested; on encoder-init failure (no nvcuda.dll,
+    // no CUDA driver, no NVIDIA GPU, etc.) fall back to libx264 automatically.
+    const baseOpts = {
+      input:      rawMp4,
+      output:     outPath,
+      resolution: resolvedSettings.resolution,
+      quality:    resolvedSettings.quality,
+      fps:        resolvedSettings.fps,
+      watermark:  resolvedSettings.watermark,
+    }
+    try {
+      await spawnProcess(ffmpegPath, buildEncodeArgs({ ...baseOpts, gpuAcceleration: resolvedSettings.gpuAcceleration }))
+    } catch (e) {
+      if (resolvedSettings.gpuAcceleration && /nvcuda\.dll|h264_nvenc|h264_qsv|Cannot load|Error while opening encoder/i.test(e.message)) {
+        console.warn('[converter] GPU encoder unavailable, falling back to CPU (libx264):', e.message.slice(0, 200))
+        await spawnProcess(ffmpegPath, buildEncodeArgs({ ...baseOpts, gpuAcceleration: false }))
+      } else {
+        throw e
+      }
+    }
 
     if (!fs.existsSync(outPath) || fs.statSync(outPath).size === 0) {
       throw new Error('FFmpeg produced empty output')
@@ -154,16 +164,24 @@ async function mergeJobs(jobs, { swivelPath, ffmpegPath, outputFolder, outputNam
 
     // Stage 3: Encode merged MP4 with quality/resolution/watermark → final output
     onProgress?.({ stage: 'encoding', progress: 70 })
-    const encodeArgs = buildEncodeArgs({
-      input:           mergedRaw,
-      output:          outPath,
-      resolution:      resolvedSettings.resolution,
-      quality:         resolvedSettings.quality,
-      fps:             resolvedSettings.fps,
-      gpuAcceleration: resolvedSettings.gpuAcceleration,
-      watermark:       resolvedSettings.watermark,
-    })
-    await spawnProcess(ffmpegPath, encodeArgs)
+    const baseOpts = {
+      input:      mergedRaw,
+      output:     outPath,
+      resolution: resolvedSettings.resolution,
+      quality:    resolvedSettings.quality,
+      fps:        resolvedSettings.fps,
+      watermark:  resolvedSettings.watermark,
+    }
+    try {
+      await spawnProcess(ffmpegPath, buildEncodeArgs({ ...baseOpts, gpuAcceleration: resolvedSettings.gpuAcceleration }))
+    } catch (e) {
+      if (resolvedSettings.gpuAcceleration && /nvcuda\.dll|h264_nvenc|h264_qsv|Cannot load|Error while opening encoder/i.test(e.message)) {
+        console.warn('[converter] GPU encoder unavailable, falling back to CPU (libx264):', e.message.slice(0, 200))
+        await spawnProcess(ffmpegPath, buildEncodeArgs({ ...baseOpts, gpuAcceleration: false }))
+      } else {
+        throw e
+      }
+    }
 
     if (!fs.existsSync(outPath) || fs.statSync(outPath).size === 0) {
       throw new Error('FFmpeg produced empty merged output')

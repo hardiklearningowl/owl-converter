@@ -34,15 +34,16 @@ const SIZE_MAP = { small: 0.08, medium: 0.14, large: 0.20 }
 function buildEncodeArgs({ input, output, resolution, quality, fps, gpuAcceleration, watermark }) {
   const args = ['-y', '-i', input]
 
-  // Video codec
+  // Video codec + quality
+  // NVENC and libx264 use different quality control flags. -crf works only
+  // on libx264; NVENC needs -rc constqp -qp <n>. Passing -crf to NVENC
+  // returns -22 (EINVAL) and the encode fails with "received no packets".
+  const qpValue = CRF_MAP[quality] ?? '18'
   if (gpuAcceleration) {
-    args.push('-c:v', 'h264_nvenc', '-preset', 'fast')
+    args.push('-c:v', 'h264_nvenc', '-preset', 'p4', '-rc', 'constqp', '-qp', qpValue)
   } else {
-    args.push('-c:v', 'libx264', '-preset', 'fast')
+    args.push('-c:v', 'libx264', '-preset', 'fast', '-crf', qpValue)
   }
-
-  // CRF (quality)
-  args.push('-crf', CRF_MAP[quality] ?? '18')
 
   // Audio
   args.push('-c:a', 'aac', '-b:a', '128k')
